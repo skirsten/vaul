@@ -173,26 +173,9 @@ export function Root({
     onChange: (o: boolean) => {
       onOpenChange?.(o);
 
-      if (!o && !nested) {
-        restorePositionSetting();
-      }
-
       setTimeout(() => {
         onAnimationEnd?.(o);
       }, TRANSITIONS.DURATION * 1000);
-
-      if (o && !modal) {
-        if (typeof window !== 'undefined') {
-          window.requestAnimationFrame(() => {
-            document.body.style.pointerEvents = 'auto';
-          });
-        }
-      }
-
-      if (!o) {
-        // This will be removed when the exit animation ends (`500ms`)
-        document.body.style.pointerEvents = 'auto';
-      }
     },
   });
   const [hasBeenOpened, setHasBeenOpened] = React.useState<boolean>(false);
@@ -244,15 +227,6 @@ export function Root({
   usePreventScroll({
     isDisabled:
       !isOpen || isDragging || !modal || justReleased || !hasBeenOpened || !repositionInputs || !disablePreventScroll,
-  });
-
-  const { restorePositionSetting } = usePositionFixed({
-    isOpen,
-    modal,
-    nested: nested ?? false,
-    hasBeenOpened,
-    preventScrollRestoration,
-    noBodyStyles,
   });
 
   function getScale() {
@@ -734,15 +708,6 @@ export function Root({
     }
   }
 
-  React.useEffect(() => {
-    if (!modal) {
-      // Need to do this manually unfortunately
-      window.requestAnimationFrame(() => {
-        document.body.style.pointerEvents = 'auto';
-      });
-    }
-  }, [modal]);
-
   return (
     <DialogPrimitive.Root
       defaultOpen={defaultOpen}
@@ -757,6 +722,7 @@ export function Root({
         setIsOpen(open);
       }}
       open={isOpen}
+      modal={modal}
     >
       <DrawerContext.Provider
         value={{
@@ -802,11 +768,6 @@ export const Overlay = React.forwardRef<HTMLDivElement, React.ComponentPropsWith
     const { overlayRef, snapPoints, onRelease, shouldFade, isOpen, modal, shouldAnimate } = useDrawerContext();
     const composedRef = useComposedRefs(ref, overlayRef);
     const hasSnapPoints = snapPoints && snapPoints.length > 0;
-
-    // Overlay is the component that is locking scroll, removing it will unlock the scroll without having to dig into Radix's Dialog library
-    if (!modal) {
-      return null;
-    }
 
     const onMouseUp = React.useCallback((event: React.PointerEvent<HTMLDivElement>) => onRelease(event), [onRelease]);
 
